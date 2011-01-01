@@ -1,0 +1,16 @@
+<h1>Delete Image / Flag Image / Report Abuse</h1>
+<p>
+    If this image <b>http://doqdoq.com/{{uuid}}</b> has any of the following:
+    <ul>
+        <li>very offsensive content</li>
+        <li>child sexual abuses</li>
+        <li>incites racial hatred</li>
+        <li>criminally obscene adult content</li>
+    </ul>
+    {% if allow_delete == 'yes'%}
+    <a href="/delete/{{uuid}}">You can delete this image</a> OR <br/>
+    {% endif %}
+    
+    You can send us an email (<a href="mailto:{{email}}">{{email_label}}</a>) so that we can delete the file ourselves. Do not forget to
+    include the image ID and the reason why we should delete the files.
+</p>

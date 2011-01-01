@@ -1,0 +1,50 @@
+<h1>Image UploaderX</h1>
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{% if uuid %}
+    URL: {{uuid}}<br/>
+    Uploaded on: {{uploaded_on}}<br/>
+    Views: {{views}}<br/>
+    
+    <img src="/{{uuid}}.{{ext}}" />
+    <br/>
+    Submit to: <a href="http://www.reddit.com/submit?url={{url}}/{{uuid}}">Reddit</a> | 
+    <a href="http://www.facebook.com/sharer.php?u={{url}}/{{uuid}}">Facebook</a> |
+    <a href="http://twitter.com/share?url={{url}}/{{uuid}}">Twitter</a> |
+    <a href="http://www.stumbleupon.com/submit?url={{url}}/{{uuid}}">StumbleUpon</a> |
+    <a href="http://digg.com/submit?phase=2&url={{url}}/{{uuid}}">Digg</a>
+    <br/>
+    
+    <a href="/options/{{uuid}}/">Image Options</a>
+{% else %}
+<div style="border: 1px solid black;">
+    <form id="uploadfile" name="uploadfile" action="" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Upload File!" />
+    </form>
+</div>
+
+<div style="border: 1px solid black;">
+    <form id="uploadurl" name="uploadurl" action="" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ formurl.as_p }}
+    <input type="submit" value="Upload from URL!" />
+    </form>
+</div>    
+{% endif %}
+COOKIES
+{{cookies}}
+<hr/>
+{{sessionid}}
+<hr/>
+uploaded_files:
+{{session.uploaded_files}}
+<hr/>
+{{session.uploadedfiles}}

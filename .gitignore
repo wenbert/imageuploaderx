@@ -1,0 +1,4 @@
+*.pyc
+/public_html
+*.eprj
+*.swp

@@ -1,0 +1,48 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>doqdoq: simple anonymous image uploads {% block title %}{% endblock %}</title>
+    
+
+    <link rel="stylesheet" href="/css/styles.css" type="text/css" media="screen, projection">
+    <link rel="stylesheet" href="/css/styles.css" type="text/css" media="print">
+</head>
+<body>
+
+<div class="container_12">
+    <div class="grid_1 alpha">
+        <a href="/"><img src="/images/doqdoq_logo.png" border="0"/></a>
+    </div>
+    {% if uuid %}
+        <div class="grid_11 omega">
+            Link: <input type="text" class="linkbox" value="{{url}}/{{uuid}}"/>
+            Direct Link: <input type="text" class="linkbox" value="{{url}}/{{uuid}}.{{ext}}"/><br/>
+            Uploaded: {{uploaded_on}} | Views: {{views}} | Bandwidth Used: {{bandwidth}}<br/>
+            Share: <a href="http://www.reddit.com/submit?url={{url}}/{{uuid}}">Reddit</a> | 
+            <a href="http://www.facebook.com/sharer.php?u={{url}}/{{uuid}}">Facebook</a> |
+            <a href="http://twitter.com/share?url={{url}}/{{uuid}}">Twitter</a> |
+            <a href="http://www.stumbleupon.com/submit?url={{url}}/{{uuid}}">StumbleUpon</a> |
+            <a href="http://digg.com/submit?phase=2&url={{url}}/{{uuid}}">Digg</a>
+            &nbsp;
+        </div>
+        <div class="grid_12 alpha">
+            <img src="/{{uuid}}.{{ext}}" border="0"/>
+        </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+    <div class="grid_12 alpha">
+        {% block footer %}
+        <br/>
+        {% if uuid %}
+        <a href="/options/{{uuid}}/">Image Deletion</a> | 
+        {% endif %}
+        <a href="{{url}}/static/faq.html">FAQ</a> | <a href="{{url}}/static/policy.html"> Policy/Limitations &amp; Liability/Agreement </a> | <a href="mailto:admin@doqdoq.com">Contact Admin</>
+        {% endblock %}
+    </div>
+</div>
+</body>
+</html>

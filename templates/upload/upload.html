@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    
+    {% if not uuid %}
+    <div class="grid_12 alpha">
+        <h3>Upload a file</h3>
+        You can upload your file by clicking on the "Choose File" / "Browse" button.<br/>
+        <form id="uploadfile" name="uploadfile" action="" method="post" enctype="multipart/form-data">
+        <br/>
+        {% csrf_token %}
+        {{ form }}
+        <input type="submit" value="Upload file now!" />
+        </form>
+    </div>
+    
+    <div class="grid_12 alpha">
+        <h3>Upload from a URL</h3>
+        You can also upload from a URL by entering the image link below. <br/>(http://www.google.com/images/logos/ps_logo2a_cp.png)<br/>
+        <form id="uploadurl" name="uploadurl" action="" method="post" enctype="multipart/form-data">
+        <br/>
+        {% csrf_token %}
+        {{ formurl }}
+        <input type="submit" value="Upload from URL now!" />
+        </form>
+    </div>    
+    {% endif %}
+{% endblock %}
