@@ -19,8 +19,9 @@
         <div class="grid_11 omega">
             Link: <input type="text" class="linkbox" value="{{url}}/{{uuid}}"/>
             Direct Link: <input type="text" class="linkbox" value="{{url}}/{{uuid}}.{{ext}}"/><br/>
-            Uploaded: {{uploaded_on}} | Views: {{views}} | Bandwidth Used: {{bandwidth}}<br/>
-            Share: <a href="http://www.reddit.com/submit?url={{url}}/{{uuid}}">Reddit</a> | 
+            <span style="font-size: 10px;">Uploaded: {{uploaded_on}} | Views: {{views}} | Bandwidth Used: {{bandwidth}}</span><br/>
+            <a href="/" style="color: #FF8000; font-weight: bold; text-decoration:none;">Click here to upload a new photo!</a>
+            <b>Share:</b> <a href="http://www.reddit.com/submit?url={{url}}/{{uuid}}">Reddit</a> | 
             <a href="http://www.facebook.com/sharer.php?u={{url}}/{{uuid}}">Facebook</a> |
             <a href="http://twitter.com/share?url={{url}}/{{uuid}}">Twitter</a> |
             <a href="http://www.stumbleupon.com/submit?url={{url}}/{{uuid}}">StumbleUpon</a> |
@@ -40,7 +41,7 @@
         {% if uuid %}
         <a href="/options/{{uuid}}/">Image Deletion</a> | 
         {% endif %}
-        <a href="{{url}}/static/faq.html">FAQ</a> | <a href="{{url}}/static/policy.html"> Policy/Limitations &amp; Liability/Agreement </a> | <a href="mailto:admin@doqdoq.com">Contact Admin</>
+        <a href="{{url}}/static/blog.html">Blog</a> | <a href="{{url}}/static/faq.html">FAQ</a> | <a href="{{url}}/static/policy.html"> Policy/Limitations &amp; Liability/Agreement </a> | <a href="mailto:admin@doqdoq.com">Contact Admin</>
         {% endblock %}
     </div>
 </div>

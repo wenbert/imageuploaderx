@@ -18,6 +18,7 @@ import cStringIO # *much* faster than StringIO
 import urllib
 import Image
 import time
+import hashlib 
 
 def upload(request, uuid=None):
     
@@ -35,17 +36,11 @@ def upload(request, uuid=None):
                 
                 #set uuid in cookie
                 response = HttpResponseRedirect(uuid)
-                """
-                upload_images = ""
-                if 'uploaded_images' in request.COOKIES:
-                    upload_images = request.COOKIES['uploaded_images'] + " " + str(uuid)
-                set_cookie(response, 'uploaded_images', upload_images)
-                """
+                
                 if 'uploadedfiles' in request.session:
                     request.session['uploadedfiles'] += " " + str(uuid)
                 else:
                     request.session['uploadedfiles'] = str(uuid)
-
                 
                 return response
         else:
@@ -55,7 +50,6 @@ def upload(request, uuid=None):
                 uuid = handle_url_file(request)
                 #messages.success(request, 'Successful upload!')
                 
-                #set uuid in cookie
                 response = HttpResponseRedirect(uuid)
                 
                 if 'uploadedfiles' in request.session:
@@ -82,6 +76,7 @@ def upload(request, uuid=None):
             'cookies': request.COOKIES,
             'sessionid': request.session.session_key,
             'session':request.session,
+            'filehash':image.filehash,
             'size': convert_bytes(image.size),
             'bandwidth': convert_bytes(image.bandwidth),
             #'sessionid': request.COOKIES[settings.SESSION_COOKIE_NAME],
@@ -203,11 +198,18 @@ def handle_uploaded_file(request):
         randname = rand1(settings.RANDOM_ID_LENGTH)
         filename = "%s.%s" % (randname, ext)
         
-        #if 'nsfw_file' in request.POST:
-        #    nsfw_file = 1
-        #else:
-        #    nsfw_file = 0
+        file_path_destination = os.path.join(settings.UPLOAD_DIRECTORY,filename)
         
+        destination = open(file_path_destination, 'wb+')
+        filehash = checkhash(destination)
+        
+        uuid = ''
+        image = Uploads.objects.get(filehash=filehash)
+        uuid = image.uuid
+        
+        return "%s" % (uuid)
+        
+    except Uploads.DoesNotExist:
         upload = Uploads(
             ip          = request.META['REMOTE_ADDR'],
             filename    = f.name,
@@ -215,21 +217,20 @@ def handle_uploaded_file(request):
             ext         = ext,
             path        = settings.UPLOAD_DIRECTORY,
             views       = 1,
-            #nsfw        = nsfw_file,
             source      = "-",
             size        = f.size,
             bandwidth   = f.size,
+            filehash    = filehash,
         )
-            
         upload.save()
         
-        file_path_destination = os.path.join(settings.UPLOAD_DIRECTORY,filename)
-        destination = open(file_path_destination, 'wb+')
         for chunk in f.chunks():
             destination.write(chunk)
         destination.close()
         
-        return "%s" % (upload.uuid)
+        uuid = upload.uuid    
+    
+        return "%s" % (uuid)
         
     except NameError, e:
         raise e
@@ -275,6 +276,20 @@ def handle_url_file(request):
         return "%s" % (upload.uuid)
     except IOError, e:
         raise e
+        
+def checkhash(f, block_size=8192):
+    """
+    Check hash of the file then return it.
+    http://stackoverflow.com/questions/1131220/get-md5-hash-of-a-files-without-open-it-in-python
+    """
+    md5 = hashlib.md5()
+    while True:
+        data = f.read(block_size)
+        if not data:
+            break
+        md5.update(data)
+    #return md5.digest()
+    return md5.hexdigest()
         
 def rand1(leng):
     """
