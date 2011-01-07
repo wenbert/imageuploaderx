@@ -250,6 +250,17 @@ def handle_url_file(request):
         ext = str(newfilename.split('.')[-1]).lower()
         im = cStringIO.StringIO(file.read()) # constructs a StringIO holding the image
         img = Image.open(im)
+        
+        filehash = checkhash(im)
+        
+        uuid = ''
+        image = Uploads.objects.get(filehash=filehash)
+        uuid = image.uuid
+        
+        return "%s" % (uuid)
+        
+    except Uploads.DoesNotExist:
+        
         img.save(os.path.join(settings.UPLOAD_DIRECTORY,(("%s.%s")%(randname,ext))))
         del img
         
@@ -269,6 +280,7 @@ def handle_url_file(request):
             #nsfw        = nsfw_url,
             source      = request.POST['url'],
             size        = filesize,
+            filehash    = filehash,
         )
             
         upload.save()
