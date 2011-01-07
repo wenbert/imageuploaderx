@@ -200,16 +200,19 @@ def handle_uploaded_file(request):
         
         file_path_destination = os.path.join(settings.UPLOAD_DIRECTORY,filename)
         
-        destination = open(file_path_destination, 'wb+')
-        filehash = checkhash(destination)
+        filehash = None
+        destination = None
+        uuid = None
         
-        uuid = ''
+        filehash = checkhash(f)
+        
         image = Uploads.objects.get(filehash=filehash)
         uuid = image.uuid
         
         return "%s" % (uuid)
         
     except Uploads.DoesNotExist:
+        destination = open(file_path_destination, 'wb+')
         upload = Uploads(
             ip          = request.META['REMOTE_ADDR'],
             filename    = f.name,
@@ -224,16 +227,18 @@ def handle_uploaded_file(request):
         )
         upload.save()
         
-        for chunk in f.chunks():
-            destination.write(chunk)
         destination.close()
         
-        uuid = upload.uuid    
-    
-        return "%s" % (uuid)
+        #uuid = upload.uuid    
+        return "%s" % (upload.uuid)
         
     except NameError, e:
         raise e
+        
+    finally:
+        
+        del filehash
+        
         
 def handle_url_file(request):
     """
@@ -393,3 +398,24 @@ def convert_bytes(bytes):
     else:
         size = '%.2f bytes' % bytes
     return size
+    
+def checkhash(f, block_size=8192):
+    """
+    Check hash of the file then return it.
+    http://stackoverflow.com/questions/1131220/get-md5-hash-of-a-files-without-open-it-in-python
+    """
+    md5 = hashlib.md5()
+    while True:
+        data = f.read(block_size)
+        if not data:
+            break
+        md5.update(data)
+    #return md5.digest()
+    return md5.hexdigest()
+    
+def clearsession(request):
+    try:
+        del request.session['uploadedfiles']
+    except KeyError:
+        pass
+    return HttpResponse("Session cleared.")
