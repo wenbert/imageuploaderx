@@ -19,17 +19,21 @@
         <div class="grid_11 omega">
             Link: <input type="text" class="linkbox" value="{{url}}/{{uuid}}"/>
             Direct Link: <input type="text" class="linkbox" value="{{url}}/{{uuid}}.{{ext}}"/><br/>
-            <span style="font-size: 10px;">Uploaded: {{uploaded_on}} | Views: {{views}} | Bandwidth Used: {{bandwidth}}</span><br/>
-            <a href="/" style="color: #FF8000; font-weight: bold; text-decoration:none;">Click here to upload a new photo!</a>
-            <b>Share:</b> <a href="http://www.reddit.com/submit?url={{url}}/{{uuid}}">Reddit</a> | 
-            <a href="http://www.facebook.com/sharer.php?u={{url}}/{{uuid}}">Facebook</a> |
-            <a href="http://twitter.com/share?url={{url}}/{{uuid}}">Twitter</a> |
-            <a href="http://www.stumbleupon.com/submit?url={{url}}/{{uuid}}">StumbleUpon</a> |
-            <a href="http://digg.com/submit?phase=2&url={{url}}/{{uuid}}">Digg</a>
+            <div class="toolbar01">
+                <a href="/" class="new_photo">Click here to upload a new photo!</a>
+                &nbsp;&nbsp;&nbsp;<b>Share:</b> 
+                <a href="http://www.facebook.com/sharer.php?u={{url}}/{{uuid}}">Facebook</a> |
+                <a href="http://twitter.com/share?url={{url}}/{{uuid}}">Twitter</a> |
+                <a href="http://www.reddit.com/submit?url={{url}}/{{uuid}}">Reddit</a> | 
+                <a href="http://www.stumbleupon.com/submit?url={{url}}/{{uuid}}">StumbleUpon</a> |
+                <a href="http://digg.com/submit?phase=2&url={{url}}/{{uuid}}">Digg</a>
+            </div>
             &nbsp;
+            
         </div>
         <div class="grid_12 alpha">
-            <img src="/{{uuid}}.{{ext}}" border="0"/>
+            <img src="/{{uuid}}.{{ext}}" border="0"/><br/>
+            <span style="font-size: 10px;">Uploaded: {{uploaded_on}} | Views: {{views}} | Bandwidth Used: {{bandwidth}}</span>
         </div>
     {% endif %}
 
