@@ -26,7 +26,7 @@ class Uploads(models.Model):
 
 class UploadsAdmin(admin.ModelAdmin):
     list_display = ('view_image', 'ext', 'views', 'ip', 'uploaded_on','size', 'bandwidth','filehash', 'source')
-    list_filter = ('ip', 'source')
+    #list_filter = ('ip', 'source')
     search_fields = ('filename', 'uuid', 'ip', 'source', 'filehash')
 
 def delete_upload(sender, **kwargs):
