@@ -106,88 +106,7 @@ def upload(request, uuid=None):
             'form': form,
             'formurl': formurl,
         })
-        return render_to_response('upload/upload.html', form)
-
-def raw(request,uuid):
-    target = str(uuid).split('.')[:-1][0]
-    image = Uploads.objects.get(uuid=target)
-    
-    path = image.path
-    filepath = os.path.join(path,"%s.%s" % (image.uuid,image.ext))
-    
-    """
-    #Allow for hot-linking
-    if 'HTTP_REFERER' in request.META:
-        if settings.REFERER not in request.META['HTTP_REFERER']:
-            return render_to_response('403.html')
-        else:
-            pass
-    else:
-        return render_to_response('403.html')        
-    """
-        
-    response = HttpResponse(mimetype=mimetypes.guess_type(filepath)) 
-    response['Content-Disposition']='filename="%s"'\
-                                    %smart_str(image.filename)
-    response["X-Sendfile"] = filepath
-    response['Content-length'] = os.stat(filepath).st_size
-
-    return response
-    
-def options(request,uuid):
-    """
-    This is for the Image Option page.
-    """
-    image = Uploads.objects.get(uuid=uuid)
-    allow_delete = None
-    if 'uploadedfiles' in request.session:
-        if image.uuid in request.session['uploadedfiles']:
-            allow_delete = 'yes'
-            #form = DeleteImageForm(uuid)
-        else:
-            allow_delete = 'no'
-            #form = None
-    else:
-        pass
-    
-    data = RequestContext(request, {
-        'uuid': image.uuid,
-        'ext': image.ext,
-        'path': image.path,
-        'uploaded_on': image.uploaded_on,
-        'views': image.views,
-        'url': settings.SITE_URL,
-        'cookies': request.COOKIES,
-        'allow_delete': allow_delete,
-        'email':settings.IMAGE_DELETION_EMAIL,
-        'email_label':settings.IMAGE_DELETION_EMAIL_LABEL,
-        #'form': form,
-    })
-    
-    return render_to_response('upload/options.html', data)
-
-def delete(request,uuid):
-    """
-    Permanently deletes a file
-    """
-    try:
-        image = Uploads.objects.get(uuid=uuid)
-        
-        if 'uploadedfiles' in request.session:
-            if str(image.uuid) in request.session['uploadedfiles']:
-                image.delete()
-            else:
-                return render_to_response('403.html')
-        else:
-            return render_to_response('403.html')
-            
-        data = RequestContext(request, {
-            'uuid': uuid
-        })
-        return render_to_response('upload/delete.html', data)
-
-    except NameError, e:
-        raise e
+        return render_to_response('upload/upload.html', form)    
     
 def handle_uploaded_file(request):
     try:
@@ -212,7 +131,12 @@ def handle_uploaded_file(request):
         return "%s" % (uuid)
         
     except Uploads.DoesNotExist:
+        
         destination = open(file_path_destination, 'wb+')
+        for chunk in f.chunks():
+            destination.write(chunk)
+        destination.close()
+        
         upload = Uploads(
             ip          = request.META['REMOTE_ADDR'],
             filename    = f.name,
@@ -226,8 +150,6 @@ def handle_uploaded_file(request):
             filehash    = filehash,
         )
         upload.save()
-        
-        destination.close()
         
         #uuid = upload.uuid    
         return "%s" % (upload.uuid)
@@ -293,6 +215,90 @@ def handle_url_file(request):
         return "%s" % (upload.uuid)
     except IOError, e:
         raise e
+
+def raw(request,uuid):
+    target = str(uuid).split('.')[:-1][0]
+    image = Uploads.objects.get(uuid=target)
+    
+    path = image.path
+    filepath = os.path.join(path,"%s.%s" % (image.uuid,image.ext))
+    
+    """
+    #Allow for hot-linking
+    if 'HTTP_REFERER' in request.META:
+        if settings.REFERER not in request.META['HTTP_REFERER']:
+            return render_to_response('403.html')
+        else:
+            pass
+    else:
+        return render_to_response('403.html')        
+    """
+        
+    response = HttpResponse(mimetype=mimetypes.guess_type(filepath)) 
+    response['Content-Disposition']='filename="%s"'\
+                                    %smart_str(image.filename)
+    response["X-Sendfile"] = filepath
+    response['Content-length'] = os.stat(filepath).st_size
+
+    return response
+
+
+def options(request,uuid):
+    """
+    This is for the Image Option page.
+    """
+    image = Uploads.objects.get(uuid=uuid)
+    allow_delete = None
+    if 'uploadedfiles' in request.session:
+        if image.uuid in request.session['uploadedfiles']:
+            allow_delete = 'yes'
+            #form = DeleteImageForm(uuid)
+        else:
+            allow_delete = 'no'
+            #form = None
+    else:
+        pass
+    
+    data = RequestContext(request, {
+        'uuid': image.uuid,
+        'ext': image.ext,
+        'path': image.path,
+        'uploaded_on': image.uploaded_on,
+        'views': image.views,
+        'url': settings.SITE_URL,
+        'cookies': request.COOKIES,
+        'allow_delete': allow_delete,
+        'email':settings.IMAGE_DELETION_EMAIL,
+        'email_label':settings.IMAGE_DELETION_EMAIL_LABEL,
+        #'form': form,
+    })
+    
+    return render_to_response('upload/options.html', data)
+
+def delete(request,uuid):
+    """
+    Permanently deletes a file
+    """
+    try:
+        image = Uploads.objects.get(uuid=uuid)
+        
+        if 'uploadedfiles' in request.session:
+            if str(image.uuid) in request.session['uploadedfiles']:
+                image.delete()
+            else:
+                return render_to_response('403.html')
+        else:
+            return render_to_response('403.html')
+            
+        data = RequestContext(request, {
+            'uuid': uuid
+        })
+        return render_to_response('upload/delete.html', data)
+
+    except NameError, e:
+        raise e
+
+
         
 def checkhash(f, block_size=8192):
     """
@@ -398,6 +404,27 @@ def convert_bytes(bytes):
     else:
         size = '%.2f bytes' % bytes
     return size
+    
+def checkhash(f, block_size=8192):
+    """
+    Check hash of the file then return it.
+    http://stackoverflow.com/questions/1131220/get-md5-hash-of-a-files-without-open-it-in-python
+    """
+    md5 = hashlib.md5()
+    while True:
+        data = f.read(block_size)
+        if not data:
+            break
+        md5.update(data)
+    #return md5.digest()
+    return md5.hexdigest()
+    
+def clearsession(request):
+    try:
+        del request.session['uploadedfiles']
+    except KeyError:
+        pass
+    return HttpResponse("Session cleared.")
     
 def checkhash(f, block_size=8192):
     """
