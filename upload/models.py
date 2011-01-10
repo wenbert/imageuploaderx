@@ -25,9 +25,9 @@ class Uploads(models.Model):
         return "%s/%s.%s" % (settings.SITE_URL,self.uuid,self.ext)
 
 class UploadsAdmin(admin.ModelAdmin):
-    list_display = ('filename', 'view_image', 'ext', 'views', 'ip', 'uploaded_on','size', 'bandwidth', 'source')
+    list_display = ('view_image', 'ext', 'views', 'ip', 'uploaded_on','size', 'bandwidth','filehash', 'source')
     list_filter = ('ip', 'source')
-    search_fields = ('filename', 'uuid', 'ip', 'source')
+    search_fields = ('filename', 'uuid', 'ip', 'source', 'filehash')
 
 def delete_upload(sender, **kwargs):
     """
