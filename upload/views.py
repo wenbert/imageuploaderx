@@ -103,24 +103,46 @@ def upload(request, uuid=None):
         return render_to_response('upload/upload.html', form)    
     
 def handle_uploaded_file(request):
-    try:
-        f = request.FILES['file']
-        ext = str(f).split('.')[-1]
-        #ext = os.path.splitext(f)[1]
-        
-        
-        #filename = "%s.%s" % (uuid.uuid4(), ext)
-        randname = rand1(settings.RANDOM_ID_LENGTH)
-        filename = "%s.%s" % (randname, ext)
-        
-        file_path_destination = os.path.join(settings.UPLOAD_DIRECTORY,filename)
-        
-        filehash = None
-        destination = None
-        uuid = None
-        
-        filehash = checkhash(f)
-        
+    
+    f = request.FILES['file']
+    ext = str(f).split('.')[-1]
+    #ext = os.path.splitext(f)[1]
+    
+    #filename = "%s.%s" % (uuid.uuid4(), ext)
+    randname = rand1(settings.RANDOM_ID_LENGTH)
+    filename = "%s.%s" % (randname, ext)
+    
+    file_path_destination = os.path.join(settings.UPLOAD_DIRECTORY,filename)
+    
+    filehash = None
+    destination = None
+    uuid = None
+    
+    #filehash = checkhash(f)
+    destination = open(file_path_destination, 'wb+')
+    for chunk in f.chunks():
+        destination.write(chunk)
+    destination.close()
+    
+    upload = Uploads(
+        ip          = request.META['REMOTE_ADDR'],
+        filename    = f.name,
+        uuid        = randname,
+        ext         = ext,
+        path        = settings.UPLOAD_DIRECTORY,
+        views       = 1,
+        source      = "-",
+        size        = f.size,
+        bandwidth   = f.size,
+        filehash    = '',
+    )
+    upload.save()
+    return "%s" % (upload.uuid)
+    
+    """
+    #uuid = upload.uuid    
+    
+    try:    
         image = Uploads.objects.get(filehash=filehash)
         uuid = image.uuid
         
@@ -149,7 +171,7 @@ def handle_uploaded_file(request):
         
         #uuid = upload.uuid    
         return "%s" % (upload.uuid)
-        
+    """    
         
         
 def handle_url_file(request):
@@ -168,13 +190,34 @@ def handle_url_file(request):
     #ext = os.path.splitext(filename)[1].replace(".", "")
     path = os.path.join(settings.UPLOAD_DIRECTORY, randname)
 
-    hash = checkhash(f)
+    p = os.path.join(settings.UPLOAD_DIRECTORY, randname + ext)
+    with open(p, 'wb') as output:
+        output.write(data)
+    filesize = len(data)
 
+    upload = Uploads(
+        ip          = request.META['REMOTE_ADDR'],
+        filename    = filename,
+        uuid        = randname,
+        ext         = ext.replace(".", ""),
+        path        = settings.UPLOAD_DIRECTORY,
+        views       = 1,
+        bandwidth   = filesize,
+        source      = request.POST['url'],
+        size        = filesize,
+        filehash    = '',
+    )
+
+    upload.save()
+    return upload.uuid
+    
+    """
+    #HASH CHECK DISABLED
+    
+    hash = checkhash(f)
     try:
         image = Uploads.objects.get(filehash=hash)
         return image.uuid
-    except EOFError:
-        pass # end of image sequence
     except Uploads.DoesNotExist:
         p = os.path.join(settings.UPLOAD_DIRECTORY, randname + ext)
         with open(p, 'wb') as output:
@@ -196,7 +239,7 @@ def handle_url_file(request):
 
         upload.save()
         return upload.uuid
-
+    """
 def handle_url_file2(request):
     """
     Open a file from a URL.
