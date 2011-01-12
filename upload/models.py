@@ -35,7 +35,7 @@ def delete_upload(sender, **kwargs):
     is the same as the name of the group that was created.
     """
     instance = kwargs['instance']
-    path_to_delete = '%s/%s.%s' % (instance.path,instance.uuid,instance.ext)
+    path_to_delete = '%s/%s%s' % (instance.path,instance.uuid,instance.ext)
     if not os.path.isdir(path_to_delete):
         os.unlink(path_to_delete)
         

@@ -19,6 +19,7 @@ import urllib
 import Image
 import time
 import hashlib 
+import shutil
 
 def upload(request, uuid=None):
     
@@ -84,22 +85,15 @@ def upload(request, uuid=None):
         
         response = render_to_response('upload/upload.html', data)
         
-        if 'uploadedfiles' in request.session:
-            if image.uuid not in request.session['uploadedfiles']:
-                image.views += 1
-                image.bandwidth += image.size
-                image.save()
-            else:
-                pass
+        if request.session.get('has_visited', False):
+            pass
         else:
-            if request.session.get('has_visited', False):
-                pass
-            else:
-                request.session['has_visited'] = True
-                image.views += 1
-                image.bandwidth += image.size
-                image.save()
-                
+            request.session['has_visited'] = True
+            image.views += 1
+            
+        image.bandwidth += image.size
+        image.save()
+                        
         return response        
     else:
         form = RequestContext(request, {
@@ -112,6 +106,8 @@ def handle_uploaded_file(request):
     try:
         f = request.FILES['file']
         ext = str(f).split('.')[-1]
+        #ext = os.path.splitext(f)[1]
+        
         
         #filename = "%s.%s" % (uuid.uuid4(), ext)
         randname = rand1(settings.RANDOM_ID_LENGTH)
@@ -154,12 +150,6 @@ def handle_uploaded_file(request):
         #uuid = upload.uuid    
         return "%s" % (upload.uuid)
         
-    except NameError, e:
-        raise e
-        
-    finally:
-        
-        del filehash
         
         
 def handle_url_file(request):
@@ -170,41 +160,128 @@ def handle_url_file(request):
     Then save the file.
     Return the UUID when successful.
     """
+    f = urllib.urlopen(request.POST['url'])
+    data = f.read()
+    randname = rand1(settings.RANDOM_ID_LENGTH)
+    filename = os.path.basename(request.POST['url'])
+    ext = os.path.splitext(filename)[1]
+    #ext = os.path.splitext(filename)[1].replace(".", "")
+    path = os.path.join(settings.UPLOAD_DIRECTORY, randname)
+
+    hash = checkhash(f)
+
     try:
-        file = urllib.urlopen(request.POST['url'])
+        image = Uploads.objects.get(filehash=hash)
+        return image.uuid
+    except EOFError:
+        pass # end of image sequence
+    except Uploads.DoesNotExist:
+        p = os.path.join(settings.UPLOAD_DIRECTORY, randname + ext)
+        with open(p, 'wb') as output:
+            output.write(data)
+        filesize = len(data)
+
+        upload = Uploads(
+            ip          = request.META['REMOTE_ADDR'],
+            filename    = filename,
+            uuid        = randname,
+            ext         = ext.replace(".", ""),
+            path        = settings.UPLOAD_DIRECTORY,
+            views       = 1,
+            bandwidth   = filesize,
+            source      = request.POST['url'],
+            size        = filesize,
+            filehash    = hash,
+        )
+
+        upload.save()
+        return upload.uuid
+
+def handle_url_file2(request):
+    """
+    Open a file from a URL.
+    Split the file to get the filename and extension.
+    Generate a random uuid using rand1()
+    Then save the file.
+    Return the UUID when successful.
+    """
+    try:
+        #file = urllib.urlopen(request.POST['url'])
+        #randname = rand1(settings.RANDOM_ID_LENGTH)
+        ##newfilename = request.POST['url'].split('/')[-1]
+        #newfilename = os.path.basename(request.POST['url'])
+        #ext = str(newfilename.split('.')[-1]).lower()
+        #im = cStringIO.StringIO(file.read()) # constructs a StringIO holding the image
+        #img = Image.open(im)
+        f = urllib.urlopen(request.POST['url'])
         randname = rand1(settings.RANDOM_ID_LENGTH)
-        newfilename = request.POST['url'].split('/')[-1]
-        ext = str(newfilename.split('.')[-1]).lower()
-        im = cStringIO.StringIO(file.read()) # constructs a StringIO holding the image
-        img = Image.open(im)
+        filename = os.path.basename(request.POST['url'])
+        ext = os.path.splitext(filename)[1]
+        path = os.path.join(settings.UPLOAD_DIRECTORY, randname)
+        im = cStringIO.StringIO(f.read())
+        """
+        if ext == ".gif" or ext == "gif":
+            
+        else:    
+             # constructs a StringIO holding the image
+        """
         
-        filehash = checkhash(im)
         
-        uuid = ''
+        
+        """
+        data = f.read()
+        length = len(data)
+        img = Image.fromstring(data)
+        """
+        #img = Image.open(im)
+        """
+        if ext == '.gif' or ext == 'gif':
+            img.seek(1)
+            while 1:
+                img.seek(img.tell()+1)
+        """
+        
+            
+        #filehash = checkhash(im)
+        filehash = checkhash(f)
+        
         image = Uploads.objects.get(filehash=filehash)
         uuid = image.uuid
         
         return "%s" % (uuid)
         
+    except EOFError:
+        pass # end of image sequence
+        
     except Uploads.DoesNotExist:
         
-        img.save(os.path.join(settings.UPLOAD_DIRECTORY,(("%s.%s")%(randname,ext))))
-        del img
+        #if ext == '.gif' or ext == 'gif':
+        #    for f in ImageSequence(img):
+        #        f.seek(f.tell()+1)
         
-        #if 'nsfw_url' in request.POST:
-        #    nsfw_url = 1
-        #else:
-        #    nsfw_url = 0
-        filesize = os.stat(os.path.join(settings.UPLOAD_DIRECTORY,(("%s.%s")%(randname,ext)))).st_size
+        #img.save(os.path.join(settings.UPLOAD_DIRECTORY,(("%s%s")%(randname,ext))))
+        #del img
+        #open(os.path.join(settings.UPLOAD_DIRECTORY,(("%s%s")%(randname,ext))), 'w').write(f.read())
+        #p = os.path.join(settings.UPLOAD_DIRECTORY,(("%s%s")%(randname,ext)))
+        #with open(p, 'w') as wf: shutil.copyfileobj(im, wf)
+        #p = os.path.join(settings.UPLOAD_DIRECTORY,(("%s%s")%(randname,ext)))
+        #output = open(p, 'wb')
+        #output.write(f.read())
+        file_path_destination = os.path.join(settings.UPLOAD_DIRECTORY,(("%s%s")%(randname,ext)))
+        destination = open(file_path_destination, 'wb+')
+        for chunk in f.chunks():
+            destination.write(chunk)
+        destination.close()
+                
+        filesize = os.stat(os.path.join(settings.UPLOAD_DIRECTORY,(("%s%s")%(randname,ext)))).st_size
         upload = Uploads(
             ip          = request.META['REMOTE_ADDR'],
-            filename    = newfilename,
+            filename    = filename,
             uuid        = randname,
             ext         = ext,
             path        = settings.UPLOAD_DIRECTORY,
             views       = 1,
             bandwidth   = filesize,
-            #nsfw        = nsfw_url,
             source      = request.POST['url'],
             size        = filesize,
             filehash    = filehash,
@@ -213,8 +290,7 @@ def handle_url_file(request):
         upload.save()
         #return uuid
         return "%s" % (upload.uuid)
-    except IOError, e:
-        raise e
+    
 
 def raw(request,uuid):
     target = str(uuid).split('.')[:-1][0]
@@ -381,7 +457,7 @@ def pretty_date(time=False):
     if day_diff < 365:
         return str(day_diff/30) + " month(s) ago"
     return str(day_diff/365) + " year(s) ago"
-    
+
 def convert_bytes(bytes):
     """
     Convert file sizes to human readable ones.
@@ -446,3 +522,15 @@ def clearsession(request):
     except KeyError:
         pass
     return HttpResponse("Session cleared.")
+    
+class ImageSequence:
+    def __init__(self, im):
+        self.im = im
+    def __getitem__(self, ix):
+        try:
+            if ix:
+                self.im.seek(ix)
+            return self.im
+        except EOFError:
+            #raise IndexError # end of sequence
+            pass
