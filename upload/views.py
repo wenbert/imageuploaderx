@@ -143,7 +143,8 @@ def handle_url_file(request):
     """
     
     randname = rand1(settings.RANDOM_ID_LENGTH)
-    filename = os.path.basename(request.POST['url'])
+    url = request.POST['url'].split('?')[0]
+    filename = os.path.basename(url)
     ext = os.path.splitext(filename)[1]
     #ext = os.path.splitext(filename)[1].replace(".", "")
     path = os.path.join(settings.UPLOAD_DIRECTORY, randname)
