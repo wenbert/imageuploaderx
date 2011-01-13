@@ -22,7 +22,7 @@ import hashlib
 import shutil
 
 def upload(request, uuid=None):
-    
+    viewdate = ''
     #if 'uploadedfiles' not in request.session:
     #    request.session['uploadedfiles'] = ""
     
@@ -31,11 +31,7 @@ def upload(request, uuid=None):
         if 'url' not in request.POST:
             form = UploadFileForm(request.POST, request.FILES)
             if form.is_valid():
-                
                 uuid = handle_uploaded_file(request)
-                #messages.success(request, 'Successful upload!')
-                
-                #set uuid in cookie
                 response = HttpResponseRedirect(uuid)
                 
                 if 'uploadedfiles' in request.session:
@@ -47,17 +43,14 @@ def upload(request, uuid=None):
         else:
             formurl = UploadURLForm(request.POST)
             if formurl.is_valid():
-                
                 uuid = handle_url_file(request)
-                #messages.success(request, 'Successful upload!')
-                
                 response = HttpResponseRedirect(uuid)
                 
                 if 'uploadedfiles' in request.session:
                     request.session['uploadedfiles'] += " " + str(uuid)
                 else:
                     request.session['uploadedfiles'] = str(uuid)
-                
+                    
                 return response
     else:
         form = UploadFileForm()
@@ -65,22 +58,20 @@ def upload(request, uuid=None):
     
     if uuid:
         image = Uploads.objects.get(uuid=uuid)
+        viewdate = pretty_date(int(time.mktime(time.strptime(str(image.uploaded_on), '%Y-%m-%d %H:%M:%S'))))
         
         data = RequestContext(request, {
             'uuid': image.uuid,
             'ext': str(image.ext).lower(),
             'path': image.path,
-            #'uploaded_on': (image.uploaded_on),
-            'uploaded_on': pretty_date(int(time.mktime(time.strptime(str(image.uploaded_on), '%Y-%m-%d %H:%M:%S')))),
+            'uploaded_on': viewdate,
             'views': image.views,
             'url': settings.SITE_URL,
             'cookies': request.COOKIES,
-            'sessionid': request.session.session_key,
             'session':request.session,
             'filehash':image.filehash,
             'size': convert_bytes(image.size),
             'bandwidth': convert_bytes(image.bandwidth),
-            #'sessionid': request.COOKIES[settings.SESSION_COOKIE_NAME],
         })
         
         response = render_to_response('upload/upload.html', data)
@@ -93,7 +84,7 @@ def upload(request, uuid=None):
             
         image.bandwidth += image.size
         image.save()
-                        
+        
         return response        
     else:
         form = RequestContext(request, {
@@ -118,6 +109,7 @@ def handle_uploaded_file(request):
     destination = None
     uuid = None
     
+    #no more checking of file hash
     #filehash = checkhash(f)
     destination = open(file_path_destination, 'wb+')
     for chunk in f.chunks():
@@ -139,39 +131,6 @@ def handle_uploaded_file(request):
     upload.save()
     return "%s" % (upload.uuid)
     
-    """
-    #uuid = upload.uuid    
-    
-    try:    
-        image = Uploads.objects.get(filehash=filehash)
-        uuid = image.uuid
-        
-        return "%s" % (uuid)
-        
-    except Uploads.DoesNotExist:
-        
-        destination = open(file_path_destination, 'wb+')
-        for chunk in f.chunks():
-            destination.write(chunk)
-        destination.close()
-        
-        upload = Uploads(
-            ip          = request.META['REMOTE_ADDR'],
-            filename    = f.name,
-            uuid        = randname,
-            ext         = ext,
-            path        = settings.UPLOAD_DIRECTORY,
-            views       = 1,
-            source      = "-",
-            size        = f.size,
-            bandwidth   = f.size,
-            filehash    = filehash,
-        )
-        upload.save()
-        
-        #uuid = upload.uuid    
-        return "%s" % (upload.uuid)
-    """    
         
         
 def handle_url_file(request):
@@ -182,19 +141,25 @@ def handle_url_file(request):
     Then save the file.
     Return the UUID when successful.
     """
-    f = urllib.urlopen(request.POST['url'])
-    data = f.read()
+    
     randname = rand1(settings.RANDOM_ID_LENGTH)
     filename = os.path.basename(request.POST['url'])
     ext = os.path.splitext(filename)[1]
     #ext = os.path.splitext(filename)[1].replace(".", "")
     path = os.path.join(settings.UPLOAD_DIRECTORY, randname)
 
+    f = urllib.urlopen(request.POST['url'])
     p = os.path.join(settings.UPLOAD_DIRECTORY, randname + ext)
-    with open(p, 'wb') as output:
-        output.write(data)
-    filesize = len(data)
-
+    filesize = 0
+    with open(p,'wb') as output:
+        while True:
+            buf = f.read(65536)
+            filesize += len(buf)
+            if not buf:
+                break
+            output.write(buf)
+    #filesize = len(f.read())
+    
     upload = Uploads(
         ip          = request.META['REMOTE_ADDR'],
         filename    = filename,
@@ -210,130 +175,7 @@ def handle_url_file(request):
 
     upload.save()
     return upload.uuid
-    
-    """
-    #HASH CHECK DISABLED
-    
-    hash = checkhash(f)
-    try:
-        image = Uploads.objects.get(filehash=hash)
-        return image.uuid
-    except Uploads.DoesNotExist:
-        p = os.path.join(settings.UPLOAD_DIRECTORY, randname + ext)
-        with open(p, 'wb') as output:
-            output.write(data)
-        filesize = len(data)
-
-        upload = Uploads(
-            ip          = request.META['REMOTE_ADDR'],
-            filename    = filename,
-            uuid        = randname,
-            ext         = ext.replace(".", ""),
-            path        = settings.UPLOAD_DIRECTORY,
-            views       = 1,
-            bandwidth   = filesize,
-            source      = request.POST['url'],
-            size        = filesize,
-            filehash    = hash,
-        )
-
-        upload.save()
-        return upload.uuid
-    """
-def handle_url_file2(request):
-    """
-    Open a file from a URL.
-    Split the file to get the filename and extension.
-    Generate a random uuid using rand1()
-    Then save the file.
-    Return the UUID when successful.
-    """
-    try:
-        #file = urllib.urlopen(request.POST['url'])
-        #randname = rand1(settings.RANDOM_ID_LENGTH)
-        ##newfilename = request.POST['url'].split('/')[-1]
-        #newfilename = os.path.basename(request.POST['url'])
-        #ext = str(newfilename.split('.')[-1]).lower()
-        #im = cStringIO.StringIO(file.read()) # constructs a StringIO holding the image
-        #img = Image.open(im)
-        f = urllib.urlopen(request.POST['url'])
-        randname = rand1(settings.RANDOM_ID_LENGTH)
-        filename = os.path.basename(request.POST['url'])
-        ext = os.path.splitext(filename)[1]
-        path = os.path.join(settings.UPLOAD_DIRECTORY, randname)
-        im = cStringIO.StringIO(f.read())
-        """
-        if ext == ".gif" or ext == "gif":
-            
-        else:    
-             # constructs a StringIO holding the image
-        """
-        
-        
-        
-        """
-        data = f.read()
-        length = len(data)
-        img = Image.fromstring(data)
-        """
-        #img = Image.open(im)
-        """
-        if ext == '.gif' or ext == 'gif':
-            img.seek(1)
-            while 1:
-                img.seek(img.tell()+1)
-        """
-        
-            
-        #filehash = checkhash(im)
-        filehash = checkhash(f)
-        
-        image = Uploads.objects.get(filehash=filehash)
-        uuid = image.uuid
-        
-        return "%s" % (uuid)
-        
-    except EOFError:
-        pass # end of image sequence
-        
-    except Uploads.DoesNotExist:
-        
-        #if ext == '.gif' or ext == 'gif':
-        #    for f in ImageSequence(img):
-        #        f.seek(f.tell()+1)
-        
-        #img.save(os.path.join(settings.UPLOAD_DIRECTORY,(("%s%s")%(randname,ext))))
-        #del img
-        #open(os.path.join(settings.UPLOAD_DIRECTORY,(("%s%s")%(randname,ext))), 'w').write(f.read())
-        #p = os.path.join(settings.UPLOAD_DIRECTORY,(("%s%s")%(randname,ext)))
-        #with open(p, 'w') as wf: shutil.copyfileobj(im, wf)
-        #p = os.path.join(settings.UPLOAD_DIRECTORY,(("%s%s")%(randname,ext)))
-        #output = open(p, 'wb')
-        #output.write(f.read())
-        file_path_destination = os.path.join(settings.UPLOAD_DIRECTORY,(("%s%s")%(randname,ext)))
-        destination = open(file_path_destination, 'wb+')
-        for chunk in f.chunks():
-            destination.write(chunk)
-        destination.close()
-                
-        filesize = os.stat(os.path.join(settings.UPLOAD_DIRECTORY,(("%s%s")%(randname,ext)))).st_size
-        upload = Uploads(
-            ip          = request.META['REMOTE_ADDR'],
-            filename    = filename,
-            uuid        = randname,
-            ext         = ext,
-            path        = settings.UPLOAD_DIRECTORY,
-            views       = 1,
-            bandwidth   = filesize,
-            source      = request.POST['url'],
-            size        = filesize,
-            filehash    = filehash,
-        )
-            
-        upload.save()
-        #return uuid
-        return "%s" % (upload.uuid)
-    
+   
 
 def raw(request,uuid):
     target = str(uuid).split('.')[:-1][0]
@@ -541,27 +383,9 @@ def checkhash(f, block_size=8192):
 def clearsession(request):
     try:
         del request.session['uploadedfiles']
-    except KeyError:
-        pass
-    return HttpResponse("Session cleared.")
-    
-def checkhash(f, block_size=8192):
-    """
-    Check hash of the file then return it.
-    http://stackoverflow.com/questions/1131220/get-md5-hash-of-a-files-without-open-it-in-python
-    """
-    md5 = hashlib.md5()
-    while True:
-        data = f.read(block_size)
-        if not data:
-            break
-        md5.update(data)
-    #return md5.digest()
-    return md5.hexdigest()
-    
-def clearsession(request):
-    try:
-        del request.session['uploadedfiles']
+        del request.session['upload_list']
+        del request.session
+        request.session.delete('upload_list') 
     except KeyError:
         pass
     return HttpResponse("Session cleared.")
