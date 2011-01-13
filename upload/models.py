@@ -22,12 +22,12 @@ class Uploads(models.Model):
         return "%s.%s" % (self.uuid,self.ext)
         
     def view_image(self):
-        return "%s.%s" % (settings.SITE_URL,self.uuid,self.ext)
+        return "%s.%s" % (self.uuid,self.ext)
 
 class UploadsAdmin(admin.ModelAdmin):
     list_display = ('view_image', 'ext', 'views', 'ip', 'uploaded_on','size', 'bandwidth', 'source')
     #list_filter = ('ip', 'source')
-    search_fields = ('filename', 'uuid', 'ip', 'source', 'filehash')
+    search_fields = ('filename', 'uuid', 'ip', 'source',)
 
 def delete_upload(sender, **kwargs):
     """
