@@ -3,23 +3,13 @@ from django.shortcuts import render_to_response
 from upload.forms import *
 from django.core.context_processors import csrf
 from django.template import RequestContext
-import os.path
 from django.contrib import messages
-import uuid
 from django.conf import settings
 from upload.models import *
-import mimetypes
 from django.http import HttpResponse, Http404
 from django.utils.encoding import smart_str
-import datetime
-import random
-import base64
-import cStringIO # *much* faster than StringIO
-import urllib
-import Image
-import time
-import hashlib 
-import shutil
+import random, base64, cStringIO, urllib, time, hashlib, shutil, datetime, mimetypes
+import uuid, os.path
 
 def upload(request, uuid=None):
     viewdate = ''
